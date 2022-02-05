@@ -1553,6 +1553,7 @@ typedef VOID (NTAPI *PKSYSTEM_ROUTINE) (
 #define HIGH_PRIORITY 31            // Highest thread priority level
 #define MAXIMUM_PRIORITY 32         // Number of thread priority levels
 
+#ifndef NXDK_KERNEL
 /**
  * Decrements the reference count of the section and unloads it if the reference count reaches zero.
  * @param Section The section to be unloaded.
@@ -4473,6 +4474,8 @@ XBAPI VOID FASTCALL ExInterlockedAddLargeStatistic
     IN PLARGE_INTEGER Addend,
     IN ULONG Increment
 );
+
+#endif // NXDK_KERNEL
 
 #if defined(__cplusplus)
 }
