@@ -128,6 +128,10 @@ Xbe::Xbe(class Exe *x_Exe, const char *x_szTitle, bool x_bRetail, const std::vec
                 while(s < 8 && x_Exe->m_SectionHeader[v].m_name[s] != '\0')
                     s++;
 
+                // HACK:
+                if(strcmp((const char *)x_Exe->m_SectionHeader[v].m_name, "XTIMAGE") == 0)
+                    s += 2;
+
                 mrc += s + 1;
             }
         }
@@ -373,14 +377,22 @@ Xbe::Xbe(class Exe *x_Exe, const char *x_szTitle, bool x_bRetail, const std::vec
 
                 memset(&m_SectionHeader[v].dwFlags, 0, sizeof(m_SectionHeader->dwFlags));
 
-                if(characteristics & IMAGE_SCN_MEM_WRITE)
-                    m_SectionHeader[v].dwFlags.bWritable = true;
+                // HACK:
+                if(strcmp((char *)x_Exe->m_SectionHeader[v].m_name, "XTIMAGE") == 0) {
+                    m_SectionHeader[v].dwFlags.bInsertedFile = true;
+                    m_SectionHeader[v].dwFlags.bHeadPageRO = true;
+                    m_SectionHeader[v].dwFlags.bTailPageRO = true;
+                } else {
+                    if(characteristics & IMAGE_SCN_MEM_WRITE)
+                        m_SectionHeader[v].dwFlags.bWritable = true;
 
-                if((characteristics & IMAGE_SCN_MEM_EXECUTE) ||
-                   (characteristics & IMAGE_SCN_CNT_CODE))
-                    m_SectionHeader[v].dwFlags.bExecutable = true;
+                    if((characteristics & IMAGE_SCN_MEM_EXECUTE) ||
+                    (characteristics & IMAGE_SCN_CNT_CODE))
+                        m_SectionHeader[v].dwFlags.bExecutable = true;
 
-                m_SectionHeader[v].dwFlags.bPreload = true;
+                    m_SectionHeader[v].dwFlags.bPreload = true;
+                }
+
                 m_SectionHeader[v].dwVirtualAddr =
                     x_Exe->m_SectionHeader[v].m_virtual_addr + m_Header.dwPeBaseAddr;
 
@@ -431,13 +443,22 @@ Xbe::Xbe(class Exe *x_Exe, const char *x_szTitle, bool x_bRetail, const std::vec
                     memset(secn, 0, 8);
 
                     m_SectionHeader[v].dwSectionNameAddr = hwc_secn;
-                    while(s < 8 && x_Exe->m_SectionHeader[v].m_name[s] != '\0')
-                    {
-                        m_szSectionName[v][s] = secn[s] = x_Exe->m_SectionHeader[v].m_name[s];
-                        s++;
-                    }
 
-                    m_szSectionName[v][s] = '\0';
+                    // HACK:
+                    if(strcmp((char *)x_Exe->m_SectionHeader[v].m_name, "XTIMAGE") == 0)
+                    {
+                        strcpy((char *)&m_szSectionName[v], (const char *)x_Exe->m_SectionHeader[v].m_name);
+                        strcpy(&secn[s], "$$XTIMAGE");
+                        s += 9;
+                    } else {
+                        while(s < 8 && x_Exe->m_SectionHeader[v].m_name[s] != '\0')
+                        {
+                            m_szSectionName[v][s] = secn[s] = x_Exe->m_SectionHeader[v].m_name[s];
+                            s++;
+                        }
+
+                        m_szSectionName[v][s] = '\0';
+                    }
 
                     secn += s + 1;
                     hwc_secn += s + 1;
